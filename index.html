@@ -1,79 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>AV Rack Monitoring</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AV Rack Monitoring Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1117;
+      color: #ffffff;
+    }
 
-<style>
-body{
-font-family:Arial;
-background:#111;
-color:white;
-text-align:center;
-}
+    header {
+      background: linear-gradient(90deg, #0b0f14, #151b24);
+      padding: 24px 16px;
+      text-align: center;
+      border-bottom: 1px solid #2a3442;
+    }
 
-.container{
-width:90%;
-margin:auto;
-}
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #ffffff;
+    }
 
-.card{
-background:#1e1e1e;
-padding:20px;
-margin:20px;
-border-radius:10px;
-}
+    header p {
+      margin: 8px 0 0;
+      color: #9fb3c8;
+      font-size: 0.95rem;
+    }
 
-h2{
-color:#00e5ff;
-}
+    .container {
+      width: 95%;
+      max-width: 1400px;
+      margin: 24px auto 40px;
+    }
 
-</style>
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #171c24;
+      border: 1px solid #293241;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: #67e8f9;
+      font-weight: 700;
+    }
+
+    .value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .sub {
+      margin-top: 6px;
+      color: #9fb3c8;
+      font-size: 0.9rem;
+    }
+
+    .alarm-normal {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .alarm-warning {
+      color: #ef4444;
+      font-weight: bold;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 20px;
+    }
+
+    .chart-card {
+      background: #171c24;
+      border: 1px solid #293241;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .chart-card h2 {
+      margin: 0 0 12px;
+      color: #22d3ee;
+      text-align: center;
+      font-size: 1.4rem;
+    }
+
+    iframe {
+      width: 100%;
+      height: 260px;
+      border: none;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .footer {
+      text-align: center;
+      color: #94a3b8;
+      margin-top: 28px;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .value {
+        font-size: 1.6rem;
+      }
+
+      .charts {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <header>
+    <h1>AV Rack Monitoring Dashboard</h1>
+    <p>ESP32 + ThingSpeak + GitHub Pages</p>
+  </header>
 
-<h1>AV Rack Monitoring Dashboard</h1>
+  <div class="container">
+    <div class="status-bar">
+      <div class="card">
+        <h3>System Status</h3>
+        <div class="value alarm-normal">NORMAL</div>
+        <div class="sub">Update this manually or later from live sensor logic</div>
+      </div>
 
-<div class="container">
+      <div class="card">
+        <h3>Monitoring Items</h3>
+        <div class="value">7</div>
+        <div class="sub">Temp, Humidity, Vibration X/Y/Z, Smoke, Sound</div>
+      </div>
 
-<div class="card">
-<h2>Temperature</h2>
-<iframe width="450" height="260"
-src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
-</iframe>
-</div>
+      <div class="card">
+        <h3>Cloud Platform</h3>
+        <div class="value">ThingSpeak</div>
+        <div class="sub">Live charts from your IoT channel</div>
+      </div>
 
-<div class="card">
-<h2>Humidity</h2>
-<iframe width="450" height="260"
-src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
-</iframe>
-</div>
+      <div class="card">
+        <h3>Access</h3>
+        <div class="value">Online</div>
+        <div class="sub">Hosted on GitHub Pages</div>
+      </div>
+    </div>
 
-<div class="card">
-<h2>Vibration X</h2>
-<iframe width="450" height="260"
-src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
-</iframe>
-</div>
+    <div class="charts">
+      <div class="chart-card">
+        <h2>Temperature</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=20&title=Temperature&type=line"></iframe>
+      </div>
 
-<div class="card">
-<h2>Smoke Level</h2>
-<iframe width="450" height="260"
-src="https://thingspeak.com/channels/3272717/charts/6?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
-</iframe>
-</div>
+      <div class="chart-card">
+        <h2>Humidity</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23007bff&dynamic=true&results=20&title=Humidity&type=line"></iframe>
+      </div>
 
-<div class="card">
-<h2>Sound Level</h2>
-<iframe width="450" height="260"
-src="https://thingspeak.com/channels/3272717/charts/7?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
-</iframe>
-</div>
+      <div class="chart-card">
+        <h2>Vibration X</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff7f0e&dynamic=true&results=20&title=Accel%20X&type=line"></iframe>
+      </div>
 
-</div>
+      <div class="chart-card">
+        <h2>Vibration Y</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%232ca02c&dynamic=true&results=20&title=Accel%20Y&type=line"></iframe>
+      </div>
 
+      <div class="chart-card">
+        <h2>Vibration Z</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/5?bgcolor=%23ffffff&color=%239933cc&dynamic=true&results=20&title=Accel%20Z&type=line"></iframe>
+      </div>
+
+      <div class="chart-card">
+        <h2>Smoke Level</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/6?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
+      </div>
+
+      <div class="chart-card">
+        <h2>Sound Level</h2>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/7?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line"></iframe>
+      </div>
+    </div>
+
+    <div class="footer">
+      AV Rack Monitoring System Dashboard • Auto-updating charts from ThingSpeak
+    </div>
+  </div>
 </body>
 </html>
