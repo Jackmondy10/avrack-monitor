@@ -43,15 +43,17 @@
             max-width: 1200px;
         }
 
-        /* Status Bar with Pulsing Heartbeat */
-        #status-bar {
+        /* Status Bar & Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             background: var(--card-bg);
-            padding: 15px;
+            padding: 20px;
             border-radius: 12px;
-            text-align: center;
             border: 1px solid var(--border);
             margin-bottom: 30px;
-            transition: all 0.3s ease;
+            position: relative;
         }
 
         .status-header {
@@ -64,8 +66,8 @@
         }
 
         .sync-pulse {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background-color: var(--success);
             border-radius: 50%;
             display: inline-block;
@@ -84,9 +86,30 @@
         .timestamp {
             font-size: 0.85rem;
             color: #8b949e;
-            margin-top: 8px;
-            display: block;
-            font-weight: normal;
+            margin: 10px 0;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+        }
+
+        .refresh-btn:disabled {
+            border-color: var(--border);
+            color: var(--border);
+            cursor: not-allowed;
         }
 
         /* Telemetry Grid */
@@ -104,19 +127,12 @@
             border: 1px solid var(--border);
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent);
         }
 
         .label {
             font-size: 0.75rem;
             text-transform: uppercase;
             color: #8b949e;
-            letter-spacing: 1px;
             margin-bottom: 15px;
             display: block;
         }
@@ -150,7 +166,6 @@
 
         @media (max-width: 600px) {
             .charts { grid-template-columns: 1fr; }
-            .value { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -159,12 +174,13 @@
     <h1>AV Rack Sentry</h1>
 
     <div class="container">
-        <div id="status-bar">
+        <div class="controls" id="status-container">
             <div class="status-header">
                 <span class="sync-pulse"></span>
                 <span id="status-text">CONNECTING TO SENSORS...</span>
             </div>
             <span class="timestamp" id="last-update">Waiting for first sync...</span>
+            <button class="refresh-btn" id="refresh-btn" onclick="fetchSensorData()">Force Refresh</button>
         </div>
 
         <div class="cards">
@@ -200,69 +216,75 @@
 
     <script>
         const API_URL = "https://api.thingspeak.com/channels/3272717/feeds/last.json";
+        const btn = document.getElementById("refresh-btn");
         
         async function fetchSensorData() {
-            const statusBar = document.getElementById("status-bar");
+            const statusContainer = document.getElementById("status-container");
             const timeEl = document.getElementById("last-update");
             const statusText = document.getElementById("status-text");
 
-            // Trigger pulse animation
-            statusBar.classList.add("syncing");
+            // UI Feedback: Start Syncing
+            statusContainer.classList.add("syncing");
+            btn.disabled = true;
+            btn.innerText = "Syncing...";
 
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("Data Retrieval Failed");
+                if (!response.ok) throw new Error("Offline");
                 
                 const data = await response.json();
                 
-                // 1. Update Numeric Values
+                // Update Cards
                 document.getElementById("temp").innerText = data.field1 ? `${parseFloat(data.field1).toFixed(1)}°C` : "N/A";
                 document.getElementById("hum").innerText = data.field2 ? `${data.field2}%` : "N/A";
                 document.getElementById("vibx").innerText = data.field3 || "0";
                 document.getElementById("smoke").innerText = data.field6 || "0";
                 document.getElementById("sound").innerText = data.field7 || "0";
 
-                // 2. Set the Timestamp
+                // Update Timestamp
                 const now = new Date();
                 timeEl.innerText = `Last Successful Sync: ${now.toLocaleTimeString()}`;
 
-                // 3. Logic-based Alerts
+                // Process Safety Thresholds
                 evaluateAlerts(data);
 
             } catch (error) {
-                console.error("Dashboard Error:", error);
-                statusText.innerText = "⚠️ SYNC ERROR - CHECK CONNECTION";
-                statusBar.style.borderColor = "var(--warning)";
+                statusText.innerText = "⚠️ CONNECTION ERROR";
+                statusContainer.style.borderColor = "var(--warning)";
             } finally {
-                // Stop pulsing after 1 second to show cycle is done
-                setTimeout(() => statusBar.classList.remove("syncing"), 1000);
+                // UI Feedback: Stop Syncing
+                setTimeout(() => {
+                    statusContainer.classList.remove("syncing");
+                    btn.disabled = false;
+                    btn.innerText = "Force Refresh";
+                }, 1000);
             }
         }
 
         function evaluateAlerts(data) {
-            const statusBar = document.getElementById("status-bar");
+            const statusContainer = document.getElementById("status-container");
             const statusText = document.getElementById("status-text");
             const smoke = parseInt(data.field6);
             const temp = parseFloat(data.field1);
 
             if (smoke > 1600) {
                 statusText.innerHTML = "🚨 CRITICAL: SMOKE DETECTED";
-                statusBar.style.borderColor = "var(--danger)";
+                statusContainer.style.borderColor = "var(--danger)";
                 statusText.style.color = "var(--danger)";
             } else if (temp > 45) {
                 statusText.innerHTML = "⚠️ WARNING: HIGH RACK TEMP";
-                statusBar.style.borderColor = "var(--warning)";
+                statusContainer.style.borderColor = "var(--warning)";
                 statusText.style.color = "var(--warning)";
             } else {
                 statusText.innerHTML = "✅ SYSTEM OPERATIONAL";
-                statusBar.style.borderColor = "var(--border)";
+                statusContainer.style.borderColor = "var(--border)";
                 statusText.style.color = "var(--success)";
             }
         }
 
-        // Initialize and setup Refresh Loop
+        // Run on load
         fetchSensorData();
-        // Refreshing every 20 seconds to stay well within ThingSpeak API limits
+        // Auto-refresh every 20 seconds
         setInterval(fetchSensorData, 20000);
     </script>
 </body>
