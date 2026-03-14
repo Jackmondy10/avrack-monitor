@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AV Rack Monitoring Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -223,6 +226,61 @@
       z-index: 1;
     }
 
+    .gauges-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .gauge-card {
+      background: rgba(18, 26, 43, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .gauge-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      color: var(--cyan);
+    }
+
+    .gauge-wrap {
+      position: relative;
+      max-width: 260px;
+      margin: 0 auto;
+      height: 180px;
+    }
+
+    .gauge-wrap canvas {
+      max-width: 100%;
+      max-height: 180px;
+    }
+
+    .gauge-center {
+      position: absolute;
+      left: 50%;
+      top: 68%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .gauge-center .big {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .gauge-center .small {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
     .charts-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -262,6 +320,7 @@
     @media (max-width: 1100px) {
       .top-grid,
       .live-grid,
+      .gauges-grid,
       .charts-grid {
         grid-template-columns: 1fr;
       }
@@ -386,6 +445,41 @@
       </div>
     </div>
 
+    <div class="gauges-grid">
+      <div class="gauge-card">
+        <h3>Temperature Gauge</h3>
+        <div class="gauge-wrap">
+          <canvas id="tempGauge"></canvas>
+          <div class="gauge-center">
+            <div class="big" id="tempGaugeText">--</div>
+            <div class="small">°C</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gauge-card">
+        <h3>Smoke Gauge</h3>
+        <div class="gauge-wrap">
+          <canvas id="smokeGauge"></canvas>
+          <div class="gauge-center">
+            <div class="big" id="smokeGaugeText">--</div>
+            <div class="small">MQ-2</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gauge-card">
+        <h3>Sound Gauge</h3>
+        <div class="gauge-wrap">
+          <canvas id="soundGauge"></canvas>
+          <div class="gauge-center">
+            <div class="big" id="soundGaugeText">--</div>
+            <div class="small">KY-038</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="charts-grid">
       <div class="chart-card">
         <h3>Temperature Trend</h3>
@@ -437,6 +531,10 @@
     const vibrationXThreshold = 12000;
     const vibrationYThreshold = 12000;
 
+    let tempGaugeChart;
+    let smokeGaugeChart;
+    let soundGaugeChart;
+
     function safeNumber(value) {
       const num = parseFloat(value);
       return isNaN(num) ? null : num;
@@ -444,6 +542,50 @@
 
     function setText(id, value) {
       document.getElementById(id).textContent = value;
+    }
+
+    function getGaugeColor(value, warning, danger) {
+      if (value >= danger) return "#ef4444";
+      if (value >= warning) return "#f59e0b";
+      return "#22c55e";
+    }
+
+    function createGauge(canvasId, currentValue, maxValue, warning, danger, color) {
+      const ctx = document.getElementById(canvasId).getContext("2d");
+
+      return new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          datasets: [{
+            data: [currentValue, Math.max(maxValue - currentValue, 0)],
+            backgroundColor: [color, "#243247"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          rotation: 270,
+          circumference: 180,
+          cutout: "72%",
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          }
+        }
+      });
+    }
+
+    function updateGauge(chart, currentValue, maxValue, color) {
+      chart.data.datasets[0].data = [currentValue, Math.max(maxValue - currentValue, 0)];
+      chart.data.datasets[0].backgroundColor = [color, "#243247"];
+      chart.update();
+    }
+
+    function initGauges() {
+      tempGaugeChart = createGauge("tempGauge", 0, 60, 30, 35, "#22c55e");
+      smokeGaugeChart = createGauge("smokeGauge", 0, 3000, 1500, 1800, "#22c55e");
+      soundGaugeChart = createGauge("soundGauge", 0, 600, 180, 250, "#22c55e");
     }
 
     function updateStatus(temp, smoke, sound, vibX, vibY) {
@@ -503,6 +645,10 @@
         setText("vibYValue", vibY !== null ? Math.round(vibY) : "--");
         setText("vibZValue", vibZ !== null ? Math.round(vibZ) : "--");
 
+        setText("tempGaugeText", temp !== null ? temp.toFixed(1) : "--");
+        setText("smokeGaugeText", smoke !== null ? Math.round(smoke) : "--");
+        setText("soundGaugeText", sound !== null ? Math.round(sound) : "--");
+
         if (data.created_at) {
           const time = new Date(data.created_at);
           setText("lastUpdateValue", time.toLocaleTimeString());
@@ -511,6 +657,22 @@
         }
 
         updateStatus(temp, smoke, sound, vibX, vibY);
+
+        if (temp !== null) {
+          const tempColor = getGaugeColor(temp, 30, 35);
+          updateGauge(tempGaugeChart, Math.min(temp, 60), 60, tempColor);
+        }
+
+        if (smoke !== null) {
+          const smokeColor = getGaugeColor(smoke, 1500, 1800);
+          updateGauge(smokeGaugeChart, Math.min(smoke, 3000), 3000, smokeColor);
+        }
+
+        if (sound !== null) {
+          const soundColor = getGaugeColor(sound, 180, 250);
+          updateGauge(soundGaugeChart, Math.min(sound, 600), 600, soundColor);
+        }
+
       } catch (error) {
         setText("statusText", "DATA ERROR");
         setText("statusDesc", "Unable to retrieve the latest feed from ThingSpeak.");
@@ -520,9 +682,9 @@
       }
     }
 
+    initGauges();
     loadLatestData();
     setInterval(loadLatestData, 10000);
   </script>
 </body>
 </html>
-
