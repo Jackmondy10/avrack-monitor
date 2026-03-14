@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AV Rack Monitoring</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+font-family:Arial;
+background:#111;
+color:white;
+text-align:center;
+}
+
+.container{
+width:90%;
+margin:auto;
+}
+
+.card{
+background:#1e1e1e;
+padding:20px;
+margin:20px;
+border-radius:10px;
+}
+
+h2{
+color:#00e5ff;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>AV Rack Monitoring Dashboard</h1>
+
+<div class="container">
+
+<div class="card">
+<h2>Temperature</h2>
+<iframe width="450" height="260"
+src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
+</iframe>
+</div>
+
+<div class="card">
+<h2>Humidity</h2>
+<iframe width="450" height="260"
+src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
+</iframe>
+</div>
+
+<div class="card">
+<h2>Vibration X</h2>
+<iframe width="450" height="260"
+src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
+</iframe>
+</div>
+
+<div class="card">
+<h2>Smoke Level</h2>
+<iframe width="450" height="260"
+src="https://thingspeak.com/channels/3272717/charts/6?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
+</iframe>
+</div>
+
+<div class="card">
+<h2>Sound Level</h2>
+<iframe width="450" height="260"
+src="https://thingspeak.com/channels/3272717/charts/7?bgcolor=%23ffffff&color=%23d62020&dynamic=true">
+</iframe>
+</div>
+
+</div>
+
+</body>
+</html>
