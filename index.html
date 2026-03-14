@@ -1,166 +1,269 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro AV Rack Sentry | Live Monitoring</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #161b22;
+            --accent: #00e5ff;
+            --danger: #ff4d4d;
+            --warning: #ffaa00;
+            --success: #00ff88;
+            --text: #e6edf3;
+            --border: #30363d;
+        }
 
-<title>AV Rack Monitoring Dashboard</title>
+        * { box-sizing: border-box; }
 
-<style>
+        body {
+            background: var(--bg-color);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-body{
-background:#0f1117;
-color:white;
-font-family:Arial;
-text-align:center;
-}
+        h1 {
+            font-weight: 300;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin: 20px 0;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
 
-h1{
-margin-top:30px;
-}
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
 
-.container{
-width:95%;
-margin:auto;
-}
+        /* Status Bar with Pulsing Heartbeat */
+        #status-bar {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
 
-.cards{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
-gap:20px;
-margin:30px 0;
-}
+        .status-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
 
-.card{
-background:#1c212c;
-padding:20px;
-border-radius:10px;
-width:180px;
-box-shadow:0 0 10px rgba(0,0,0,0.5);
-}
+        .sync-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+        }
 
-.value{
-font-size:32px;
-font-weight:bold;
-color:#00e5ff;
-}
+        .syncing .sync-pulse {
+            animation: pulse 1s infinite;
+        }
 
-.status{
-font-size:22px;
-margin-top:20px;
-}
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.6); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 1; }
+        }
 
-.charts{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
-gap:30px;
-margin-top:40px;
-}
+        .timestamp {
+            font-size: 0.85rem;
+            color: #8b949e;
+            margin-top: 8px;
+            display: block;
+            font-weight: normal;
+        }
 
-iframe{
-width:100%;
-height:260px;
-border:none;
-background:white;
-border-radius:10px;
-}
+        /* Telemetry Grid */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
 
-</style>
+        .card {
+            background: var(--card-bg);
+            padding: 25px 15px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
 
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #8b949e;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        /* Chart Section */
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+        }
+
+        .chart-wrapper {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 10px;
+            overflow: hidden;
+            border: 4px solid var(--card-bg);
+        }
+
+        iframe {
+            width: 100%;
+            height: 260px;
+            border: none;
+        }
+
+        @media (max-width: 600px) {
+            .charts { grid-template-columns: 1fr; }
+            .value { font-size: 1.8rem; }
+        }
+    </style>
 </head>
-
 <body>
 
-<h1>AV Rack Monitoring Dashboard</h1>
+    <h1>AV Rack Sentry</h1>
 
-<div class="container">
+    <div class="container">
+        <div id="status-bar">
+            <div class="status-header">
+                <span class="sync-pulse"></span>
+                <span id="status-text">CONNECTING TO SENSORS...</span>
+            </div>
+            <span class="timestamp" id="last-update">Waiting for first sync...</span>
+        </div>
 
-<div class="cards">
+        <div class="cards">
+            <div class="card">
+                <span class="label">Temperature</span>
+                <div class="value" id="temp">--</div>
+            </div>
+            <div class="card">
+                <span class="label">Humidity</span>
+                <div class="value" id="hum">--</div>
+            </div>
+            <div class="card">
+                <span class="label">Smoke Index</span>
+                <div class="value" id="smoke">--</div>
+            </div>
+            <div class="card">
+                <span class="label">Vibration X</span>
+                <div class="value" id="vibx">--</div>
+            </div>
+            <div class="card">
+                <span class="label">Ambient Sound</span>
+                <div class="value" id="sound">--</div>
+            </div>
+        </div>
 
-<div class="card">
-Temperature
-<div class="value" id="temp">--</div>
-</div>
+        <div class="charts">
+            <div class="chart-wrapper"><iframe src="https://thingspeak.com/channels/3272717/charts/1?dynamic=true&results=20"></iframe></div>
+            <div class="chart-wrapper"><iframe src="https://thingspeak.com/channels/3272717/charts/2?dynamic=true&results=20"></iframe></div>
+            <div class="chart-wrapper"><iframe src="https://thingspeak.com/channels/3272717/charts/6?dynamic=true&results=20"></iframe></div>
+            <div class="chart-wrapper"><iframe src="https://thingspeak.com/channels/3272717/charts/3?dynamic=true&results=20"></iframe></div>
+        </div>
+    </div>
 
-<div class="card">
-Humidity
-<div class="value" id="hum">--</div>
-</div>
+    <script>
+        const API_URL = "https://api.thingspeak.com/channels/3272717/feeds/last.json";
+        
+        async function fetchSensorData() {
+            const statusBar = document.getElementById("status-bar");
+            const timeEl = document.getElementById("last-update");
+            const statusText = document.getElementById("status-text");
 
-<div class="card">
-Smoke
-<div class="value" id="smoke">--</div>
-</div>
+            // Trigger pulse animation
+            statusBar.classList.add("syncing");
 
-<div class="card">
-Sound
-<div class="value" id="sound">--</div>
-</div>
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Data Retrieval Failed");
+                
+                const data = await response.json();
+                
+                // 1. Update Numeric Values
+                document.getElementById("temp").innerText = data.field1 ? `${parseFloat(data.field1).toFixed(1)}°C` : "N/A";
+                document.getElementById("hum").innerText = data.field2 ? `${data.field2}%` : "N/A";
+                document.getElementById("vibx").innerText = data.field3 || "0";
+                document.getElementById("smoke").innerText = data.field6 || "0";
+                document.getElementById("sound").innerText = data.field7 || "0";
 
-<div class="card">
-Vibration X
-<div class="value" id="vibx">--</div>
-</div>
+                // 2. Set the Timestamp
+                const now = new Date();
+                timeEl.innerText = `Last Successful Sync: ${now.toLocaleTimeString()}`;
 
-</div>
+                // 3. Logic-based Alerts
+                evaluateAlerts(data);
 
-<div class="status" id="status">
-System Status : NORMAL
-</div>
+            } catch (error) {
+                console.error("Dashboard Error:", error);
+                statusText.innerText = "⚠️ SYNC ERROR - CHECK CONNECTION";
+                statusBar.style.borderColor = "var(--warning)";
+            } finally {
+                // Stop pulsing after 1 second to show cycle is done
+                setTimeout(() => statusBar.classList.remove("syncing"), 1000);
+            }
+        }
 
-<div class="charts">
+        function evaluateAlerts(data) {
+            const statusBar = document.getElementById("status-bar");
+            const statusText = document.getElementById("status-text");
+            const smoke = parseInt(data.field6);
+            const temp = parseFloat(data.field1);
 
-<iframe src="https://thingspeak.com/channels/3272717/charts/1?dynamic=true&results=20"></iframe>
+            if (smoke > 1600) {
+                statusText.innerHTML = "🚨 CRITICAL: SMOKE DETECTED";
+                statusBar.style.borderColor = "var(--danger)";
+                statusText.style.color = "var(--danger)";
+            } else if (temp > 45) {
+                statusText.innerHTML = "⚠️ WARNING: HIGH RACK TEMP";
+                statusBar.style.borderColor = "var(--warning)";
+                statusText.style.color = "var(--warning)";
+            } else {
+                statusText.innerHTML = "✅ SYSTEM OPERATIONAL";
+                statusBar.style.borderColor = "var(--border)";
+                statusText.style.color = "var(--success)";
+            }
+        }
 
-<iframe src="https://thingspeak.com/channels/3272717/charts/2?dynamic=true&results=20"></iframe>
-
-<iframe src="https://thingspeak.com/channels/3272717/charts/3?dynamic=true&results=20"></iframe>
-
-<iframe src="https://thingspeak.com/channels/3272717/charts/4?dynamic=true&results=20"></iframe>
-
-<iframe src="https://thingspeak.com/channels/3272717/charts/5?dynamic=true&results=20"></iframe>
-
-<iframe src="https://thingspeak.com/channels/3272717/charts/6?dynamic=true&results=20"></iframe>
-
-<iframe src="https://thingspeak.com/channels/3272717/charts/7?dynamic=true&results=20"></iframe>
-
-</div>
-
-</div>
-
-<script>
-
-async function loadData(){
-
-let response = await fetch("https://api.thingspeak.com/channels/3272717/feeds/last.json");
-
-let data = await response.json();
-
-document.getElementById("temp").innerText=data.field1+" °C";
-document.getElementById("hum").innerText=data.field2+" %";
-document.getElementById("vibx").innerText=data.field3;
-document.getElementById("smoke").innerText=data.field6;
-document.getElementById("sound").innerText=data.field7;
-
-let smoke=parseInt(data.field6);
-
-if(smoke>1600)
-{
-document.getElementById("status").innerHTML="🚨 SMOKE DETECTED";
-document.getElementById("status").style.color="red";
-}
-else
-{
-document.getElementById("status").innerHTML="✅ SYSTEM NORMAL";
-document.getElementById("status").style.color="lime";
-}
-
-}
-
-loadData();
-
-setInterval(loadData,10000);
-
-</script>
-
+        // Initialize and setup Refresh Loop
+        fetchSensorData();
+        // Refreshing every 20 seconds to stay well within ThingSpeak API limits
+        setInterval(fetchSensorData, 20000);
+    </script>
 </body>
 </html>
