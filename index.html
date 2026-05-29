@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AV Rack Monitoring Dashboard</title>
+  <title>IoT-Based Multiple Sensor AV Rack Monitoring System</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -228,7 +228,7 @@
 
     .gauges-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 18px;
       margin-bottom: 24px;
     }
@@ -350,10 +350,11 @@
     }
   </style>
 </head>
+
 <body>
   <header>
-    <h1>AV Rack Monitoring Dashboard</h1>
-    <p>ESP32 Multi-Sensor Monitoring • ThingSpeak Cloud • GitHub Pages</p>
+    <h1>IoT-Based Multiple Sensor AV Rack Monitoring System</h1>
+    <p>ESP32 • SHTC3 • MQ-2 • KY-038 • Relay Fan Control • ThingSpeak Cloud • GitHub Pages</p>
   </header>
 
   <div class="container">
@@ -379,14 +380,17 @@
             <div class="label">Cloud Platform</div>
             <div class="big">ThingSpeak</div>
           </div>
+
           <div class="summary-card">
             <div class="label">Hosting</div>
             <div class="big">GitHub Pages</div>
           </div>
+
           <div class="summary-card">
             <div class="label">Monitoring Items</div>
-            <div class="big">7 Parameters</div>
+            <div class="big">4 Parameters</div>
           </div>
+
           <div class="summary-card">
             <div class="label">Refresh Interval</div>
             <div class="big">10 Seconds</div>
@@ -419,30 +423,6 @@
         <div class="value" id="soundValue">--</div>
         <div class="unit">Field 7 • KY-038</div>
       </div>
-
-      <div class="live-card">
-        <div class="label">Vibration X</div>
-        <div class="value" id="vibXValue">--</div>
-        <div class="unit">Field 3 • MPU6050</div>
-      </div>
-
-      <div class="live-card">
-        <div class="label">Vibration Y</div>
-        <div class="value" id="vibYValue">--</div>
-        <div class="unit">Field 4 • MPU6050</div>
-      </div>
-
-      <div class="live-card">
-        <div class="label">Vibration Z</div>
-        <div class="value" id="vibZValue">--</div>
-        <div class="unit">Field 5 • MPU6050</div>
-      </div>
-
-      <div class="live-card">
-        <div class="label">Last Update</div>
-        <div class="value" id="lastUpdateValue">--</div>
-        <div class="unit">ThingSpeak latest feed</div>
-      </div>
     </div>
 
     <div class="gauges-grid">
@@ -453,6 +433,17 @@
           <div class="gauge-center">
             <div class="big" id="tempGaugeText">--</div>
             <div class="small">°C</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gauge-card">
+        <h3>Humidity Gauge</h3>
+        <div class="gauge-wrap">
+          <canvas id="humGauge"></canvas>
+          <div class="gauge-center">
+            <div class="big" id="humGaugeText">--</div>
+            <div class="small">%RH</div>
           </div>
         </div>
       </div>
@@ -492,21 +483,6 @@
       </div>
 
       <div class="chart-card">
-        <h3>Vibration X</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff7f0e&dynamic=true&results=20&title=Vibration%20X&type=line"></iframe>
-      </div>
-
-      <div class="chart-card">
-        <h3>Vibration Y</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%232ca02c&dynamic=true&results=20&title=Vibration%20Y&type=line"></iframe>
-      </div>
-
-      <div class="chart-card">
-        <h3>Vibration Z</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/5?bgcolor=%23ffffff&color=%239933cc&dynamic=true&results=20&title=Vibration%20Z&type=line"></iframe>
-      </div>
-
-      <div class="chart-card">
         <h3>Smoke Level</h3>
         <iframe src="https://thingspeak.com/channels/3272717/charts/6?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
       </div>
@@ -518,7 +494,7 @@
     </div>
 
     <div class="footer">
-      AV Rack Monitoring System • Live cloud dashboard using ThingSpeak API and GitHub Pages
+      IoT-Based Multiple Sensor AV Rack Monitoring System • Live cloud dashboard using ThingSpeak API and GitHub Pages
     </div>
   </div>
 
@@ -528,10 +504,10 @@
     const smokeThreshold = 1800;
     const soundThreshold = 250;
     const tempThreshold = 35;
-    const vibrationXThreshold = 12000;
-    const vibrationYThreshold = 12000;
+    const humidityThreshold = 75;
 
     let tempGaugeChart;
+    let humGaugeChart;
     let smokeGaugeChart;
     let soundGaugeChart;
 
@@ -584,11 +560,12 @@
 
     function initGauges() {
       tempGaugeChart = createGauge("tempGauge", 0, 60, 30, 35, "#22c55e");
+      humGaugeChart = createGauge("humGauge", 0, 100, 60, 75, "#22c55e");
       smokeGaugeChart = createGauge("smokeGauge", 0, 3000, 1500, 1800, "#22c55e");
       soundGaugeChart = createGauge("soundGauge", 0, 600, 180, 250, "#22c55e");
     }
 
-    function updateStatus(temp, smoke, sound, vibX, vibY) {
+    function updateStatus(temp, hum, smoke, sound) {
       const statusText = document.getElementById("statusText");
       const statusDesc = document.getElementById("statusDesc");
       const statusIndicator = document.getElementById("statusIndicator");
@@ -605,16 +582,13 @@
         state = "SOUND ALERT";
         desc = "Sound level exceeded the configured threshold.";
         cls = "status-indicator status-warning";
-      } else if (
-        (vibX !== null && Math.abs(vibX) > vibrationXThreshold) ||
-        (vibY !== null && Math.abs(vibY) > vibrationYThreshold)
-      ) {
-        state = "VIBRATION ALERT";
-        desc = "Abnormal rack vibration or movement detected.";
-        cls = "status-indicator status-warning";
       } else if (temp !== null && temp > tempThreshold) {
         state = "HIGH TEMPERATURE";
         desc = "Temperature is above the recommended threshold.";
+        cls = "status-indicator status-caution";
+      } else if (hum !== null && hum > humidityThreshold) {
+        state = "HIGH HUMIDITY";
+        desc = "Humidity level is above the recommended threshold.";
         cls = "status-indicator status-caution";
       }
 
@@ -631,9 +605,6 @@
 
         const temp = safeNumber(data.field1);
         const hum = safeNumber(data.field2);
-        const vibX = safeNumber(data.field3);
-        const vibY = safeNumber(data.field4);
-        const vibZ = safeNumber(data.field5);
         const smoke = safeNumber(data.field6);
         const sound = safeNumber(data.field7);
 
@@ -641,26 +612,22 @@
         setText("humValue", hum !== null ? hum.toFixed(2) + " %" : "--");
         setText("smokeValue", smoke !== null ? Math.round(smoke) : "--");
         setText("soundValue", sound !== null ? Math.round(sound) : "--");
-        setText("vibXValue", vibX !== null ? Math.round(vibX) : "--");
-        setText("vibYValue", vibY !== null ? Math.round(vibY) : "--");
-        setText("vibZValue", vibZ !== null ? Math.round(vibZ) : "--");
 
         setText("tempGaugeText", temp !== null ? temp.toFixed(1) : "--");
+        setText("humGaugeText", hum !== null ? hum.toFixed(1) : "--");
         setText("smokeGaugeText", smoke !== null ? Math.round(smoke) : "--");
         setText("soundGaugeText", sound !== null ? Math.round(sound) : "--");
 
-        if (data.created_at) {
-          const time = new Date(data.created_at);
-          setText("lastUpdateValue", time.toLocaleTimeString());
-        } else {
-          setText("lastUpdateValue", "--");
-        }
-
-        updateStatus(temp, smoke, sound, vibX, vibY);
+        updateStatus(temp, hum, smoke, sound);
 
         if (temp !== null) {
           const tempColor = getGaugeColor(temp, 30, 35);
           updateGauge(tempGaugeChart, Math.min(temp, 60), 60, tempColor);
+        }
+
+        if (hum !== null) {
+          const humColor = getGaugeColor(hum, 60, 75);
+          updateGauge(humGaugeChart, Math.min(hum, 100), 100, humColor);
         }
 
         if (smoke !== null) {
@@ -676,6 +643,7 @@
       } catch (error) {
         setText("statusText", "DATA ERROR");
         setText("statusDesc", "Unable to retrieve the latest feed from ThingSpeak.");
+
         const statusIndicator = document.getElementById("statusIndicator");
         statusIndicator.className = "status-indicator status-warning";
         statusIndicator.textContent = "ERR";
