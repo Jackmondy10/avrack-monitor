@@ -567,8 +567,8 @@
     function isAlertFeed(feed) {
       const temp = safeNumber(feed.field1);
       const hum = safeNumber(feed.field2);
-      const smoke = safeNumber(feed.field6);
-      const sound = safeNumber(feed.field7);
+      const smoke = safeNumber(feed.field3);
+      const sound = safeNumber(feed.field4);
 
       return (
         (smoke !== null && smoke > smokeThreshold) ||
@@ -638,8 +638,8 @@
 
         const temp = safeNumber(latest.field1);
         const hum = safeNumber(latest.field2);
-        const smoke = safeNumber(latest.field6);
-        const sound = safeNumber(latest.field7);
+        const smoke = safeNumber(latest.field3);
+        const sound = safeNumber(latest.field4);
 
         const latestTime = formatSaudiTime(latest.created_at);
 
