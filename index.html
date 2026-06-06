@@ -187,17 +187,6 @@
       overflow: hidden;
     }
 
-    .live-card::after {
-      content: "";
-      position: absolute;
-      inset: auto -10% -40% auto;
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      background: rgba(34, 211, 238, 0.08);
-      filter: blur(10px);
-    }
-
     .live-card .label {
       color: var(--muted);
       font-size: 0.95rem;
@@ -249,11 +238,6 @@
       max-width: 260px;
       margin: 0 auto;
       height: 180px;
-    }
-
-    .gauge-wrap canvas {
-      max-width: 100%;
-      max-height: 180px;
     }
 
     .gauge-center {
@@ -466,12 +450,12 @@
 
       <div class="chart-card">
         <h3>Smoke Level</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/6?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
       </div>
 
       <div class="chart-card">
         <h3>Sound Level</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/7?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line"></iframe>
+        <iframe src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line"></iframe>
       </div>
     </div>
 
@@ -483,8 +467,8 @@
   <script>
     const CHANNEL_URL = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
 
-    const smokeThreshold = 1800;
-    const soundThreshold = 250;
+    const smokeThreshold = 1400;
+    const soundThreshold = 1000;
     const tempThreshold = 35;
     const humidityThreshold = 75;
 
@@ -525,7 +509,7 @@
       return "#22c55e";
     }
 
-    function createGauge(canvasId, currentValue, maxValue, warning, danger, color) {
+    function createGauge(canvasId, currentValue, maxValue, color) {
       const ctx = document.getElementById(canvasId).getContext("2d");
 
       return new Chart(ctx, {
@@ -558,10 +542,10 @@
     }
 
     function initGauges() {
-      tempGaugeChart = createGauge("tempGauge", 0, 60, 30, 35, "#22c55e");
-      humGaugeChart = createGauge("humGauge", 0, 100, 60, 75, "#22c55e");
-      smokeGaugeChart = createGauge("smokeGauge", 0, 3000, 1500, 1800, "#22c55e");
-      soundGaugeChart = createGauge("soundGauge", 0, 600, 180, 250, "#22c55e");
+      tempGaugeChart = createGauge("tempGauge", 0, 60, "#22c55e");
+      humGaugeChart = createGauge("humGauge", 0, 100, "#22c55e");
+      smokeGaugeChart = createGauge("smokeGauge", 0, 3000, "#22c55e");
+      soundGaugeChart = createGauge("soundGauge", 0, 4500, "#22c55e");
     }
 
     function isAlertFeed(feed) {
@@ -602,7 +586,7 @@
         cls = "status-indicator status-warning";
       } else if (sound !== null && sound > soundThreshold) {
         state = "SOUND ALERT";
-        desc = "Sound level exceeded the configured threshold.";
+        desc = "KY-038 sound level exceeded the configured threshold.";
         cls = "status-indicator status-warning";
       } else if (temp !== null && temp > tempThreshold) {
         state = "HIGH TEMPERATURE";
@@ -669,11 +653,11 @@
         }
 
         if (smoke !== null) {
-          updateGauge(smokeGaugeChart, Math.min(smoke, 3000), 3000, getGaugeColor(smoke, 1500, 1800));
+          updateGauge(smokeGaugeChart, Math.min(smoke, 3000), 3000, getGaugeColor(smoke, 1200, 1400));
         }
 
         if (sound !== null) {
-          updateGauge(soundGaugeChart, Math.min(sound, 600), 600, getGaugeColor(sound, 180, 250));
+          updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 1000, 2500));
         }
 
       } catch (error) {
