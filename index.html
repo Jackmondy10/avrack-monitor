@@ -467,7 +467,7 @@
   <script>
     const CHANNEL_URL = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
 
-    const smokeThreshold = 3200;
+    const smokeThreshold = 2800;
     const soundThreshold = 1000;
     const tempThreshold = 35;
     const humidityThreshold = 75;
@@ -653,7 +653,7 @@
         }
 
         if (smoke !== null) {
-          updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2800, 3200));
+          updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2700, 2800));
         }
 
         if (sound !== null) {
