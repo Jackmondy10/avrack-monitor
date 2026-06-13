@@ -301,22 +301,13 @@
       .top-grid, .live-grid, .gauges-grid, .charts-grid {
         grid-template-columns: 1fr;
       }
-
-      .summary-grid {
-        grid-template-columns: 1fr 1fr;
-      }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 700px) {
       header h1 { font-size: 1.7rem; }
-
-      .status-box {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
+      .status-box { flex-direction: column; align-items: flex-start; }
       .summary-grid { grid-template-columns: 1fr; }
-
       .live-card .value { font-size: 1.6rem; }
     }
   </style>
@@ -359,7 +350,7 @@
           </div>
           <div class="summary-card">
             <div class="label">Refresh Interval</div>
-            <div class="big">10 Seconds</div>
+            <div class="big">15 Seconds</div>
           </div>
         </div>
       </div>
@@ -371,19 +362,16 @@
         <div class="value" id="tempValue">--</div>
         <div class="unit">Field 1 • °C</div>
       </div>
-
       <div class="live-card">
         <div class="label">Humidity</div>
         <div class="value" id="humValue">--</div>
         <div class="unit">Field 2 • %RH</div>
       </div>
-
       <div class="live-card">
         <div class="label">Smoke Level</div>
         <div class="value" id="smokeValue">--</div>
         <div class="unit">Field 3 • MQ-2</div>
       </div>
-
       <div class="live-card">
         <div class="label">Sound Level</div>
         <div class="value" id="soundValue">--</div>
@@ -402,7 +390,6 @@
           </div>
         </div>
       </div>
-
       <div class="gauge-card">
         <h3>Humidity Gauge</h3>
         <div class="gauge-wrap">
@@ -413,7 +400,6 @@
           </div>
         </div>
       </div>
-
       <div class="gauge-card">
         <h3>Smoke Gauge</h3>
         <div class="gauge-wrap">
@@ -424,7 +410,6 @@
           </div>
         </div>
       </div>
-
       <div class="gauge-card">
         <h3>Sound Gauge</h3>
         <div class="gauge-wrap">
@@ -442,17 +427,14 @@
         <h3>Temperature Trend</h3>
         <iframe src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=20&title=Temperature&type=line"></iframe>
       </div>
-
       <div class="chart-card">
         <h3>Humidity Trend</h3>
         <iframe src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23007bff&dynamic=true&results=20&title=Humidity&type=line"></iframe>
       </div>
-
       <div class="chart-card">
         <h3>Smoke Level</h3>
         <iframe src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
       </div>
-
       <div class="chart-card">
         <h3>Sound Level</h3>
         <iframe src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line"></iframe>
@@ -465,17 +447,20 @@
   </div>
 
   <script>
-    const CHANNEL_URL = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
+    // ===================== CONFIG =====================
+    // IMPORTANT: These must match your Arduino thresholds exactly
+    const CHANNEL_URL      = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
+    const smokeThreshold   = 2800;
+    const soundThreshold   = 700;   // FIX 1: was 1000, must match Arduino
+    const tempThreshold    = 35;
+    const humThreshold     = 75;
 
-    const smokeThreshold = 2800;
-    const soundThreshold = 1000;
-    const tempThreshold = 35;
-    const humidityThreshold = 75;
+    // FIX 3: How many seconds to keep showing ALERT after last alarm feed
+    // Set to 60 seconds so dashboard stays red long enough to be seen
+    const alertMemorySeconds = 60;
 
-    let tempGaugeChart;
-    let humGaugeChart;
-    let smokeGaugeChart;
-    let soundGaugeChart;
+    let tempGaugeChart, humGaugeChart, smokeGaugeChart, soundGaugeChart;
+    let lastAlertTimestamp = null;  // tracks when last alert was seen
 
     function safeNumber(value) {
       const num = parseFloat(value);
@@ -488,30 +473,23 @@
 
     function formatSaudiTime(dateString) {
       if (!dateString) return "--";
-
       const date = new Date(dateString);
-
       return date.toLocaleString("en-US", {
         timeZone: "Asia/Riyadh",
-        year: "numeric",
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
+        year: "numeric", month: "short", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: true
       });
     }
 
     function getGaugeColor(value, warning, danger) {
-      if (value >= danger) return "#ef4444";
+      if (value >= danger)  return "#ef4444";
       if (value >= warning) return "#f59e0b";
       return "#22c55e";
     }
 
     function createGauge(canvasId, currentValue, maxValue, color) {
       const ctx = document.getElementById(canvasId).getContext("2d");
-
       return new Chart(ctx, {
         type: "doughnut",
         data: {
@@ -542,137 +520,145 @@
     }
 
     function initGauges() {
-      tempGaugeChart = createGauge("tempGauge", 0, 60, "#22c55e");
-      humGaugeChart = createGauge("humGauge", 0, 100, "#22c55e");
-      smokeGaugeChart = createGauge("smokeGauge", 0, 3000, "#22c55e");
+      tempGaugeChart  = createGauge("tempGauge",  0, 60,   "#22c55e");
+      humGaugeChart   = createGauge("humGauge",   0, 100,  "#22c55e");
+      smokeGaugeChart = createGauge("smokeGauge", 0, 4095, "#22c55e");
       soundGaugeChart = createGauge("soundGauge", 0, 4500, "#22c55e");
     }
 
     function isAlertFeed(feed) {
-      const temp = safeNumber(feed.field1);
-      const hum = safeNumber(feed.field2);
+      const temp  = safeNumber(feed.field1);
+      const hum   = safeNumber(feed.field2);
       const smoke = safeNumber(feed.field3);
       const sound = safeNumber(feed.field4);
-
       return (
-        (smoke !== null && smoke > smokeThreshold) ||
-        (sound !== null && sound > soundThreshold) ||
-        (temp !== null && temp > tempThreshold) ||
-        (hum !== null && hum > humidityThreshold)
+        (smoke !== null && smoke >= smokeThreshold) ||
+        (sound !== null && sound >= soundThreshold) ||
+        (temp  !== null && temp  >= tempThreshold)  ||
+        (hum   !== null && hum   >= humThreshold)
       );
     }
 
     function findLastAlertFeed(feeds) {
       for (let i = feeds.length - 1; i >= 0; i--) {
-        if (isAlertFeed(feeds[i])) {
-          return feeds[i];
-        }
+        if (isAlertFeed(feeds[i])) return feeds[i];
       }
       return null;
     }
 
-    function updateStatus(temp, hum, smoke, sound, latestTime, lastAlertTime) {
-      const statusText = document.getElementById("statusText");
-      const statusDesc = document.getElementById("statusDesc");
+    function updateStatus(temp, hum, smoke, sound, latestTime, lastAlertFeed) {
+      const statusText      = document.getElementById("statusText");
+      const statusDesc      = document.getElementById("statusDesc");
       const statusIndicator = document.getElementById("statusIndicator");
 
-      let state = "NORMAL";
-      let desc = "All monitored parameters are within the configured thresholds.";
-      let cls = "status-indicator status-normal";
-
-      if (smoke !== null && smoke > smokeThreshold) {
-        state = "SMOKE ALARM";
-        desc = "MQ-2 smoke level exceeded the configured threshold.";
-        cls = "status-indicator status-warning";
-      } else if (sound !== null && sound > soundThreshold) {
-        state = "SOUND ALERT";
-        desc = "KY-038 sound level exceeded the configured threshold.";
-        cls = "status-indicator status-warning";
-      } else if (temp !== null && temp > tempThreshold) {
-        state = "HIGH TEMPERATURE";
-        desc = "Temperature is above the recommended threshold.";
-        cls = "status-indicator status-caution";
-      } else if (hum !== null && hum > humidityThreshold) {
-        state = "HIGH HUMIDITY";
-        desc = "Humidity level is above the recommended threshold.";
-        cls = "status-indicator status-caution";
+      // FIX 3: Check if we saw an alert recently (within alertMemorySeconds)
+      // This keeps dashboard showing ALERT even if latest upload shows 0
+      if (lastAlertFeed) {
+        const alertTime = new Date(lastAlertFeed.created_at).getTime();
+        const now       = Date.now();
+        const secondsAgo = (now - alertTime) / 1000;
+        if (secondsAgo <= alertMemorySeconds) {
+          lastAlertTimestamp = alertTime;
+        }
       }
 
+      const recentAlert = lastAlertTimestamp &&
+        ((Date.now() - lastAlertTimestamp) / 1000) <= alertMemorySeconds;
+
+      // FIX 2: Determine alert state from latest values OR recent alert memory
+      let state = "NORMAL";
+      let desc  = "All monitored parameters are within the configured thresholds.";
+      let cls   = "status-indicator status-normal";
+      let indicatorText = "OK";
+
+      if (smoke !== null && smoke >= smokeThreshold) {
+        state = "SMOKE ALARM";
+        desc  = "MQ-2 smoke level exceeded the configured threshold.";
+        cls   = "status-indicator status-warning";
+        indicatorText = "ALERT";
+      } else if (sound !== null && sound >= soundThreshold) {
+        state = "SOUND ALERT";
+        desc  = "KY-038 sound level exceeded the configured threshold.";
+        cls   = "status-indicator status-warning";
+        indicatorText = "ALERT";
+      } else if (temp !== null && temp >= tempThreshold) {
+        state = "HIGH TEMPERATURE";
+        desc  = "Temperature is above the recommended threshold.";
+        cls   = "status-indicator status-caution";
+        indicatorText = "ALERT";
+      } else if (hum !== null && hum >= humThreshold) {
+        state = "HIGH HUMIDITY";
+        desc  = "Humidity level is above the recommended threshold.";
+        cls   = "status-indicator status-caution";
+        indicatorText = "ALERT";
+      } else if (recentAlert) {
+        // FIX 3: No current alarm but one happened recently — keep showing it
+        state = "RECENT ALERT";
+        desc  = "An alert was detected recently. System is now returning to normal.";
+        cls   = "status-indicator status-caution";
+        indicatorText = "WAIT";
+      }
+
+      const lastAlertTime = lastAlertFeed
+        ? formatSaudiTime(lastAlertFeed.created_at)
+        : "No alert detected in latest 100 records";
+
       statusText.textContent = state;
-      statusDesc.innerHTML =
+      statusDesc.innerHTML   =
         desc +
         "<br><br><b>Latest Update:</b> " + latestTime +
         "<br><b>Last Sensor Detection:</b> " + lastAlertTime;
 
-      statusIndicator.className = cls;
-      statusIndicator.textContent = state === "NORMAL" ? "OK" : "ALERT";
+      statusIndicator.className   = cls;
+      statusIndicator.textContent = indicatorText;
     }
 
     async function loadLatestData() {
       try {
         const response = await fetch(CHANNEL_URL, { cache: "no-store" });
-        const data = await response.json();
+        const data     = await response.json();
+        const feeds    = data.feeds || [];
+        const latest   = feeds[feeds.length - 1];
 
-        const feeds = data.feeds || [];
-        const latest = feeds[feeds.length - 1];
+        if (!latest) throw new Error("No ThingSpeak data found.");
 
-        if (!latest) {
-          throw new Error("No ThingSpeak data found.");
-        }
-
-        const temp = safeNumber(latest.field1);
-        const hum = safeNumber(latest.field2);
+        const temp  = safeNumber(latest.field1);
+        const hum   = safeNumber(latest.field2);
         const smoke = safeNumber(latest.field3);
         const sound = safeNumber(latest.field4);
 
-        const latestTime = formatSaudiTime(latest.created_at);
-
+        const latestTime   = formatSaudiTime(latest.created_at);
         const lastAlertFeed = findLastAlertFeed(feeds);
-        const lastAlertTime = lastAlertFeed
-          ? formatSaudiTime(lastAlertFeed.created_at)
-          : "No sensor detection in latest 100 records";
 
-        setText("tempValue", temp !== null ? temp.toFixed(2) + " °C" : "--");
-        setText("humValue", hum !== null ? hum.toFixed(2) + " %" : "--");
-        setText("smokeValue", smoke !== null ? Math.round(smoke) : "--");
-        setText("soundValue", sound !== null ? Math.round(sound) : "--");
+        setText("tempValue",  temp  !== null ? temp.toFixed(2)  + " °C" : "--");
+        setText("humValue",   hum   !== null ? hum.toFixed(2)   + " %"  : "--");
+        setText("smokeValue", smoke !== null ? Math.round(smoke)         : "--");
+        setText("soundValue", sound !== null ? Math.round(sound)         : "--");
 
-        setText("tempGaugeText", temp !== null ? temp.toFixed(1) : "--");
-        setText("humGaugeText", hum !== null ? hum.toFixed(1) : "--");
+        setText("tempGaugeText",  temp  !== null ? temp.toFixed(1)  : "--");
+        setText("humGaugeText",   hum   !== null ? hum.toFixed(1)   : "--");
         setText("smokeGaugeText", smoke !== null ? Math.round(smoke) : "--");
         setText("soundGaugeText", sound !== null ? Math.round(sound) : "--");
 
-        updateStatus(temp, hum, smoke, sound, latestTime, lastAlertTime);
+        updateStatus(temp, hum, smoke, sound, latestTime, lastAlertFeed);
 
-        if (temp !== null) {
-          updateGauge(tempGaugeChart, Math.min(temp, 60), 60, getGaugeColor(temp, 30, 35));
-        }
-
-        if (hum !== null) {
-          updateGauge(humGaugeChart, Math.min(hum, 100), 100, getGaugeColor(hum, 70, 80));
-        }
-
-        if (smoke !== null) {
-          updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2700, 2800));
-        }
-
-        if (sound !== null) {
-          updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 1000, 2500));
-        }
+        if (temp  !== null) updateGauge(tempGaugeChart,  Math.min(temp,  60),   60,   getGaugeColor(temp,  30,   35));
+        if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   80));
+        if (smoke !== null) updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2700, 2800));
+        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 700,  2500));
 
       } catch (error) {
         setText("statusText", "DATA ERROR");
         setText("statusDesc", "Unable to retrieve the latest feed from ThingSpeak.");
-
         const statusIndicator = document.getElementById("statusIndicator");
-        statusIndicator.className = "status-indicator status-warning";
+        statusIndicator.className   = "status-indicator status-warning";
         statusIndicator.textContent = "ERR";
       }
     }
 
     initGauges();
     loadLatestData();
-    setInterval(loadLatestData, 10000);
+    setInterval(loadLatestData, 15000);  // FIX: changed to 15s to match ThingSpeak minimum
   </script>
 </body>
 </html>
