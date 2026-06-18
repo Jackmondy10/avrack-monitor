@@ -139,9 +139,9 @@
     }
 
     @keyframes pulse {
-      0% { transform: scale(1); box-shadow: 0 0 14px rgba(239,68,68,0.25); }
-      50% { transform: scale(1.05); box-shadow: 0 0 26px rgba(239,68,68,0.6); }
-      100% { transform: scale(1); box-shadow: 0 0 14px rgba(239,68,68,0.25); }
+      0%   { transform: scale(1);    box-shadow: 0 0 14px rgba(239,68,68,0.25); }
+      50%  { transform: scale(1.05); box-shadow: 0 0 26px rgba(239,68,68,0.6);  }
+      100% { transform: scale(1);    box-shadow: 0 0 14px rgba(239,68,68,0.25); }
     }
 
     .summary-grid {
@@ -448,19 +448,16 @@
 
   <script>
     // ===================== CONFIG =====================
-    // IMPORTANT: These must match your Arduino thresholds exactly
-    const CHANNEL_URL      = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
-    const smokeThreshold   = 2800;
-    const soundThreshold   = 2000;   // FIX 1: was 1000, must match Arduino
-    const tempThreshold    = 35;
-    const humThreshold     = 75;
-
-    // FIX 3: How many seconds to keep showing ALERT after last alarm feed
-    // Set to 60 seconds so dashboard stays red long enough to be seen
-    const alertMemorySeconds = 60;
+    // Must match Arduino thresholds exactly
+    const CHANNEL_URL        = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
+    const smokeThreshold     = 2800;   // matches Arduino gasSmokeAlcoholThreshold
+    const soundThreshold     = 2500;   // matches Arduino soundThreshold
+    const tempThreshold      = 35;     // matches Arduino tempThreshold
+    const humThreshold       = 75;     // humidity warning only — no hardware alarm
+    const alertMemorySeconds = 60;     // keep showing ALERT for 60s after it clears
 
     let tempGaugeChart, humGaugeChart, smokeGaugeChart, soundGaugeChart;
-    let lastAlertTimestamp = null;  // tracks when last alert was seen
+    let lastAlertTimestamp = null;
 
     function safeNumber(value) {
       const num = parseFloat(value);
@@ -523,7 +520,7 @@
       tempGaugeChart  = createGauge("tempGauge",  0, 60,   "#22c55e");
       humGaugeChart   = createGauge("humGauge",   0, 100,  "#22c55e");
       smokeGaugeChart = createGauge("smokeGauge", 0, 4095, "#22c55e");
-      soundGaugeChart = createGauge("soundGauge", 0, 4500, "#22c55e");
+      soundGaugeChart = createGauge("soundGauge", 0, 4095, "#22c55e");
     }
 
     function isAlertFeed(feed) {
@@ -551,12 +548,10 @@
       const statusDesc      = document.getElementById("statusDesc");
       const statusIndicator = document.getElementById("statusIndicator");
 
-      // FIX 3: Check if we saw an alert recently (within alertMemorySeconds)
-      // This keeps dashboard showing ALERT even if latest upload shows 0
+      // Keep alert memory alive
       if (lastAlertFeed) {
-        const alertTime = new Date(lastAlertFeed.created_at).getTime();
-        const now       = Date.now();
-        const secondsAgo = (now - alertTime) / 1000;
+        const alertTime  = new Date(lastAlertFeed.created_at).getTime();
+        const secondsAgo = (Date.now() - alertTime) / 1000;
         if (secondsAgo <= alertMemorySeconds) {
           lastAlertTimestamp = alertTime;
         }
@@ -565,37 +560,47 @@
       const recentAlert = lastAlertTimestamp &&
         ((Date.now() - lastAlertTimestamp) / 1000) <= alertMemorySeconds;
 
-      // FIX 2: Determine alert state from latest values OR recent alert memory
-      let state = "NORMAL";
-      let desc  = "All monitored parameters are within the configured thresholds.";
-      let cls   = "status-indicator status-normal";
+      let state         = "NORMAL";
+      let desc          = "All monitored parameters are within the configured thresholds.";
+      let outputs       = "";
+      let cls           = "status-indicator status-normal";
       let indicatorText = "OK";
 
+      // Priority order: Smoke → Temp → Sound → Humidity
+      // Matches Arduino alarm behavior exactly
       if (smoke !== null && smoke >= smokeThreshold) {
-        state = "SMOKE ALARM";
-        desc  = "MQ-2 smoke level exceeded the configured threshold.";
-        cls   = "status-indicator status-warning";
+        state         = "SMOKE ALARM";
+        desc          = "MQ-2 smoke/gas level exceeded the configured threshold.";
+        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan ON";
+        cls           = "status-indicator status-warning";
         indicatorText = "ALERT";
-      } else if (sound !== null && sound >= soundThreshold) {
-        state = "SOUND ALERT";
-        desc  = "KY-038 sound level exceeded the configured threshold.";
-        cls   = "status-indicator status-warning";
-        indicatorText = "ALERT";
+
       } else if (temp !== null && temp >= tempThreshold) {
-        state = "HIGH TEMPERATURE";
-        desc  = "Temperature is above the recommended threshold.";
-        cls   = "status-indicator status-caution";
+        state         = "HIGH TEMPERATURE";
+        desc          = "Temperature exceeded " + tempThreshold + "°C threshold.";
+        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan ON";
+        cls           = "status-indicator status-warning";
         indicatorText = "ALERT";
+
+      } else if (sound !== null && sound >= soundThreshold) {
+        state         = "SOUND ALERT";
+        desc          = "KY-038 sound level exceeded the configured threshold.";
+        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan OFF";
+        cls           = "status-indicator status-warning";
+        indicatorText = "ALERT";
+
       } else if (hum !== null && hum >= humThreshold) {
-        state = "HIGH HUMIDITY";
-        desc  = "Humidity level is above the recommended threshold.";
-        cls   = "status-indicator status-caution";
-        indicatorText = "ALERT";
+        state         = "HIGH HUMIDITY";
+        desc          = "Humidity level exceeded " + humThreshold + "% threshold.";
+        outputs       = "⚠️ Warning only — no hardware alarm triggered";
+        cls           = "status-indicator status-caution";
+        indicatorText = "WARN";
+
       } else if (recentAlert) {
-        // FIX 3: No current alarm but one happened recently — keep showing it
-        state = "RECENT ALERT";
-        desc  = "An alert was detected recently. System is now returning to normal.";
-        cls   = "status-indicator status-caution";
+        state         = "RECENT ALERT";
+        desc          = "An alert was detected recently. System is now returning to normal.";
+        outputs       = "✅ All outputs now OFF";
+        cls           = "status-indicator status-caution";
         indicatorText = "WAIT";
       }
 
@@ -606,6 +611,7 @@
       statusText.textContent = state;
       statusDesc.innerHTML   =
         desc +
+        (outputs ? "<br><small style='color:#22d3ee'>" + outputs + "</small>" : "") +
         "<br><br><b>Latest Update:</b> " + latestTime +
         "<br><b>Last Sensor Detection:</b> " + lastAlertTime;
 
@@ -627,13 +633,13 @@
         const smoke = safeNumber(latest.field3);
         const sound = safeNumber(latest.field4);
 
-        const latestTime   = formatSaudiTime(latest.created_at);
+        const latestTime    = formatSaudiTime(latest.created_at);
         const lastAlertFeed = findLastAlertFeed(feeds);
 
-        setText("tempValue",  temp  !== null ? temp.toFixed(2)  + " °C" : "--");
-        setText("humValue",   hum   !== null ? hum.toFixed(2)   + " %"  : "--");
-        setText("smokeValue", smoke !== null ? Math.round(smoke)         : "--");
-        setText("soundValue", sound !== null ? Math.round(sound)         : "--");
+        setText("tempValue",  temp  !== null ? temp.toFixed(2) + " °C" : "--");
+        setText("humValue",   hum   !== null ? hum.toFixed(2)  + " %"  : "--");
+        setText("smokeValue", smoke !== null ? Math.round(smoke)        : "--");
+        setText("soundValue", sound !== null ? Math.round(sound)        : "--");
 
         setText("tempGaugeText",  temp  !== null ? temp.toFixed(1)  : "--");
         setText("humGaugeText",   hum   !== null ? hum.toFixed(1)   : "--");
@@ -642,10 +648,11 @@
 
         updateStatus(temp, hum, smoke, sound, latestTime, lastAlertFeed);
 
+        // Gauge colors match Arduino thresholds exactly
         if (temp  !== null) updateGauge(tempGaugeChart,  Math.min(temp,  60),   60,   getGaugeColor(temp,  30,   35));
-        if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   80));
+        if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   75));
         if (smoke !== null) updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2700, 2800));
-        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 2000,  3500));
+        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4095), 4095, getGaugeColor(sound, 2000, 2500));
 
       } catch (error) {
         setText("statusText", "DATA ERROR");
@@ -658,7 +665,7 @@
 
     initGauges();
     loadLatestData();
-    setInterval(loadLatestData, 15000);  // FIX: changed to 15s to match ThingSpeak minimum
+    setInterval(loadLatestData, 15000);
   </script>
 </body>
 </html>
