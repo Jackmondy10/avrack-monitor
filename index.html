@@ -645,7 +645,7 @@
         if (temp  !== null) updateGauge(tempGaugeChart,  Math.min(temp,  60),   60,   getGaugeColor(temp,  30,   35));
         if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   80));
         if (smoke !== null) updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 2700, 2800));
-        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 700,  2500));
+        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4500), 4500, getGaugeColor(sound, 1000,  2500));
 
       } catch (error) {
         setText("statusText", "DATA ERROR");
