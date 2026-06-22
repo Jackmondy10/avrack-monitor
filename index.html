@@ -450,7 +450,7 @@
     // Must match Arduino thresholds exactly
     const CHANNEL_URL        = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
     const smokeThreshold     = 2000;   // matches Arduino gasSmokeAlcoholThreshold
-    const soundThreshold     = 1800;   // matches Arduino soundThreshold
+    const soundThreshold     = 2000;   // matches Arduino soundThreshold
     const tempThreshold      = 35;     // matches Arduino tempThreshold
     const humThreshold       = 75;     // humidity warning only — no hardware alarm
     const alertMemorySeconds = 60;     // keep showing ALERT for 60s after it clears
@@ -651,7 +651,7 @@
         if (temp  !== null) updateGauge(tempGaugeChart,  Math.min(temp,  60),   60,   getGaugeColor(temp,  30,   35));
         if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   75));
         if (smoke !== null) updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 1900, 2000));
-        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4095), 4095, getGaugeColor(sound, 1500, 1800));
+        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4095), 4095, getGaugeColor(sound, 1700, 2000));
 
       } catch (error) {
         setText("statusText", "DATA ERROR");
