@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>IoT-Based Multiple-Sensor AV Rack Monitoring System</title>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     :root {
       --bg: #0b1220;
@@ -27,14 +30,18 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(180deg, #08101c 0%, #0f172a 100%);
+      background: linear-gradient(
+        180deg,
+        #08101c 0%,
+        #0f172a 100%
+      );
       color: var(--text);
     }
 
     header {
       padding: 26px 16px 20px;
       text-align: center;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(5, 10, 18, 0.65);
       backdrop-filter: blur(6px);
       position: sticky;
@@ -89,7 +96,9 @@
       min-height: 120px;
     }
 
-    .status-main { text-align: left; }
+    .status-main {
+      text-align: left;
+    }
 
     .status-label {
       color: var(--muted);
@@ -117,31 +126,57 @@
       place-items: center;
       font-weight: bold;
       font-size: 0.95rem;
-      border: 3px solid rgba(255,255,255,0.12);
-      box-shadow: 0 0 22px rgba(255,255,255,0.08);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 22px rgba(255, 255, 255, 0.08);
       flex-shrink: 0;
     }
 
     .status-normal {
       color: #d1fae5;
-      background: radial-gradient(circle, rgba(34,197,94,0.8) 0%, rgba(22,101,52,0.55) 60%, rgba(18,26,43,1) 100%);
+      background: radial-gradient(
+        circle,
+        rgba(34, 197, 94, 0.8) 0%,
+        rgba(22, 101, 52, 0.55) 60%,
+        rgba(18, 26, 43, 1) 100%
+      );
     }
 
     .status-warning {
       color: #fee2e2;
-      background: radial-gradient(circle, rgba(239,68,68,0.85) 0%, rgba(127,29,29,0.55) 60%, rgba(18,26,43,1) 100%);
+      background: radial-gradient(
+        circle,
+        rgba(239, 68, 68, 0.85) 0%,
+        rgba(127, 29, 29, 0.55) 60%,
+        rgba(18, 26, 43, 1) 100%
+      );
       animation: pulse 1.2s infinite;
     }
 
     .status-caution {
       color: #fef3c7;
-      background: radial-gradient(circle, rgba(245,158,11,0.85) 0%, rgba(120,53,15,0.55) 60%, rgba(18,26,43,1) 100%);
+      background: radial-gradient(
+        circle,
+        rgba(245, 158, 11, 0.85) 0%,
+        rgba(120, 53, 15, 0.55) 60%,
+        rgba(18, 26, 43, 1) 100%
+      );
     }
 
     @keyframes pulse {
-      0%   { transform: scale(1);    box-shadow: 0 0 14px rgba(239,68,68,0.25); }
-      50%  { transform: scale(1.05); box-shadow: 0 0 26px rgba(239,68,68,0.6);  }
-      100% { transform: scale(1);    box-shadow: 0 0 14px rgba(239,68,68,0.25); }
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
+      }
+
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 26px rgba(239, 68, 68, 0.6);
+      }
+
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
+      }
     }
 
     .summary-grid {
@@ -298,373 +333,967 @@
     }
 
     @media (max-width: 1100px) {
-      .top-grid, .live-grid, .gauges-grid, .charts-grid {
+      .top-grid,
+      .live-grid,
+      .gauges-grid,
+      .charts-grid {
         grid-template-columns: 1fr;
       }
-      .summary-grid { grid-template-columns: 1fr 1fr; }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     @media (max-width: 700px) {
-      header h1 { font-size: 1.7rem; }
-      .status-box { flex-direction: column; align-items: flex-start; }
-      .summary-grid { grid-template-columns: 1fr; }
-      .live-card .value { font-size: 1.6rem; }
+      header h1 {
+        font-size: 1.7rem;
+      }
+
+      .status-box {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .live-card .value {
+        font-size: 1.6rem;
+      }
     }
   </style>
 </head>
 
 <body>
+
   <header>
     <h1>IoT-Based Multiple-Sensor AV Rack Monitoring System</h1>
   </header>
 
   <div class="container">
+
     <div class="top-grid">
+
       <div class="panel">
         <h2>System Status</h2>
+
         <div class="status-box">
+
           <div class="status-main">
-            <div class="status-label">Current Condition</div>
-            <div class="status-value" id="statusText">Loading...</div>
-            <div class="status-desc" id="statusDesc">Reading latest values from ThingSpeak.</div>
+            <div class="status-label">
+              Current Condition
+            </div>
+
+            <div class="status-value" id="statusText">
+              Loading...
+            </div>
+
+            <div class="status-desc" id="statusDesc">
+              Reading latest values from ThingSpeak.
+            </div>
           </div>
-          <div class="status-indicator status-caution" id="statusIndicator">WAIT</div>
+
+          <div
+            class="status-indicator status-caution"
+            id="statusIndicator"
+          >
+            WAIT
+          </div>
+
         </div>
       </div>
 
       <div class="panel">
         <h2>System Summary</h2>
+
         <div class="summary-grid">
+
           <div class="summary-card">
-            <div class="label">Cloud Platform</div>
-            <div class="big">ThingSpeak</div>
+            <div class="label">
+              Cloud Platform
+            </div>
+            <div class="big">
+              ThingSpeak
+            </div>
           </div>
+
           <div class="summary-card">
-            <div class="label">Hosting</div>
-            <div class="big">GitHub Pages</div>
+            <div class="label">
+              Hosting
+            </div>
+            <div class="big">
+              GitHub Pages
+            </div>
           </div>
+
           <div class="summary-card">
-            <div class="label">Monitoring Items</div>
-            <div class="big">4 Parameters</div>
+            <div class="label">
+              Monitoring Items
+            </div>
+            <div class="big">
+              4 Parameters
+            </div>
           </div>
+
           <div class="summary-card">
-            <div class="label">Refresh Interval</div>
-            <div class="big">15 Seconds</div>
+            <div class="label">
+              Refresh Interval
+            </div>
+            <div class="big">
+              15 Seconds
+            </div>
           </div>
+
         </div>
       </div>
+
     </div>
 
     <div class="live-grid">
+
       <div class="live-card">
-        <div class="label">Temperature</div>
-        <div class="value" id="tempValue">--</div>
-        <div class="unit">Field 1 • °C</div>
+        <div class="label">
+          Temperature
+        </div>
+
+        <div class="value" id="tempValue">
+          --
+        </div>
+
+        <div class="unit">
+          Field 1 • °C
+        </div>
       </div>
+
       <div class="live-card">
-        <div class="label">Humidity</div>
-        <div class="value" id="humValue">--</div>
-        <div class="unit">Field 2 • %RH</div>
+        <div class="label">
+          Humidity
+        </div>
+
+        <div class="value" id="humValue">
+          --
+        </div>
+
+        <div class="unit">
+          Field 2 • %RH
+        </div>
       </div>
+
       <div class="live-card">
-        <div class="label">Smoke Level</div>
-        <div class="value" id="smokeValue">--</div>
-        <div class="unit">Field 3 • MQ-2</div>
+        <div class="label">
+          Smoke Level
+        </div>
+
+        <div class="value" id="smokeValue">
+          --
+        </div>
+
+        <div class="unit">
+          Field 3 • MQ-2
+        </div>
       </div>
+
       <div class="live-card">
-        <div class="label">Sound Level</div>
-        <div class="value" id="soundValue">--</div>
-        <div class="unit">Field 4 • KY-038</div>
+        <div class="label">
+          Sound Level
+        </div>
+
+        <div class="value" id="soundValue">
+          --
+        </div>
+
+        <div class="unit">
+          Field 4 • KY-038
+        </div>
       </div>
+
     </div>
 
     <div class="gauges-grid">
+
       <div class="gauge-card">
         <h3>Temperature Gauge</h3>
+
         <div class="gauge-wrap">
           <canvas id="tempGauge"></canvas>
+
           <div class="gauge-center">
-            <div class="big" id="tempGaugeText">--</div>
-            <div class="small">°C</div>
+            <div class="big" id="tempGaugeText">
+              --
+            </div>
+
+            <div class="small">
+              °C
+            </div>
           </div>
         </div>
       </div>
+
       <div class="gauge-card">
         <h3>Humidity Gauge</h3>
+
         <div class="gauge-wrap">
           <canvas id="humGauge"></canvas>
+
           <div class="gauge-center">
-            <div class="big" id="humGaugeText">--</div>
-            <div class="small">%RH</div>
+            <div class="big" id="humGaugeText">
+              --
+            </div>
+
+            <div class="small">
+              %RH
+            </div>
           </div>
         </div>
       </div>
+
       <div class="gauge-card">
         <h3>Smoke Gauge</h3>
+
         <div class="gauge-wrap">
           <canvas id="smokeGauge"></canvas>
+
           <div class="gauge-center">
-            <div class="big" id="smokeGaugeText">--</div>
-            <div class="small">MQ-2</div>
+            <div class="big" id="smokeGaugeText">
+              --
+            </div>
+
+            <div class="small">
+              MQ-2
+            </div>
           </div>
         </div>
       </div>
+
       <div class="gauge-card">
         <h3>Sound Gauge</h3>
+
         <div class="gauge-wrap">
           <canvas id="soundGauge"></canvas>
+
           <div class="gauge-center">
-            <div class="big" id="soundGaugeText">--</div>
-            <div class="small">KY-038</div>
+            <div class="big" id="soundGaugeText">
+              --
+            </div>
+
+            <div class="small">
+              KY-038
+            </div>
           </div>
         </div>
       </div>
+
     </div>
 
     <div class="charts-grid">
+
       <div class="chart-card">
         <h3>Temperature Trend</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=20&title=Temperature&type=line"></iframe>
+
+        <iframe
+          src="https://thingspeak.com/channels/3272717/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=20&title=Temperature&type=line">
+        </iframe>
       </div>
+
       <div class="chart-card">
         <h3>Humidity Trend</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23007bff&dynamic=true&results=20&title=Humidity&type=line"></iframe>
+
+        <iframe
+          src="https://thingspeak.com/channels/3272717/charts/2?bgcolor=%23ffffff&color=%23007bff&dynamic=true&results=20&title=Humidity&type=line">
+        </iframe>
       </div>
+
       <div class="chart-card">
         <h3>Smoke Level</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line"></iframe>
+
+        <iframe
+          src="https://thingspeak.com/channels/3272717/charts/3?bgcolor=%23ffffff&color=%23ff0000&dynamic=true&results=20&title=Smoke%20Level&type=line">
+        </iframe>
       </div>
+
       <div class="chart-card">
         <h3>Sound Level</h3>
-        <iframe src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line"></iframe>
+
+        <iframe
+          src="https://thingspeak.com/channels/3272717/charts/4?bgcolor=%23ffffff&color=%2300b894&dynamic=true&results=20&title=Sound%20Level&type=line">
+        </iframe>
       </div>
+
     </div>
 
     <div class="footer">
-      IoT-Based Multiple-Sensor AV Rack Monitoring System • Live cloud dashboard using ThingSpeak API and GitHub Pages
+      IoT-Based Multiple-Sensor AV Rack Monitoring System •
+      Live cloud dashboard using ThingSpeak API and GitHub Pages
     </div>
+
   </div>
 
   <script>
-    // ===================== CONFIG =====================
-    // Must match Arduino thresholds exactly
-    const CHANNEL_URL        = "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
-    const smokeThreshold     = 2050;   // matches Arduino gasSmokeAlcoholThreshold
-    const soundThreshold     = 2000;   // matches Arduino soundThreshold
-    const tempThreshold      = 35;     // matches Arduino tempThreshold
-    const humThreshold       = 75;     // humidity warning only — no hardware alarm
-    const alertMemorySeconds = 60;     // keep showing ALERT for 60s after it clears
 
-    let tempGaugeChart, humGaugeChart, smokeGaugeChart, soundGaugeChart;
+    // ===================== CONFIG =====================
+
+    const CHANNEL_URL =
+      "https://api.thingspeak.com/channels/3272717/feeds.json?results=100";
+
+    // Must match your latest Arduino thresholds
+    const smokeThreshold = 2800;
+    const soundThreshold = 2500;
+    const tempThreshold  = 35;
+
+    // Warning only. Does not activate fan or buzzer.
+    const humThreshold = 75;
+
+    // Keep showing recent alert for 60 seconds
+    const alertMemorySeconds = 60;
+
+    let tempGaugeChart;
+    let humGaugeChart;
+    let smokeGaugeChart;
+    let soundGaugeChart;
+
     let lastAlertTimestamp = null;
+
+    // ===================== SAFE NUMBER =====================
 
     function safeNumber(value) {
       const num = parseFloat(value);
-      return isNaN(num) ? null : num;
+
+      return isNaN(num)
+        ? null
+        : num;
     }
+
+    // ===================== SET TEXT =====================
 
     function setText(id, value) {
       document.getElementById(id).textContent = value;
     }
 
+    // ===================== SAUDI TIME =====================
+
     function formatSaudiTime(dateString) {
-      if (!dateString) return "--";
+      if (!dateString) {
+        return "--";
+      }
+
       const date = new Date(dateString);
+
       return date.toLocaleString("en-US", {
         timeZone: "Asia/Riyadh",
-        year: "numeric", month: "short", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", second: "2-digit",
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
         hour12: true
       });
     }
 
+    // ===================== GAUGE COLOR =====================
+
     function getGaugeColor(value, warning, danger) {
-      if (value >= danger)  return "#ef4444";
-      if (value >= warning) return "#f59e0b";
+      if (value >= danger) {
+        return "#ef4444";
+      }
+
+      if (value >= warning) {
+        return "#f59e0b";
+      }
+
       return "#22c55e";
     }
 
-    function createGauge(canvasId, currentValue, maxValue, color) {
-      const ctx = document.getElementById(canvasId).getContext("2d");
+    // ===================== CREATE GAUGE =====================
+
+    function createGauge(
+      canvasId,
+      currentValue,
+      maxValue,
+      color
+    ) {
+
+      const ctx =
+        document
+          .getElementById(canvasId)
+          .getContext("2d");
+
       return new Chart(ctx, {
         type: "doughnut",
+
         data: {
-          datasets: [{
-            data: [currentValue, Math.max(maxValue - currentValue, 0)],
-            backgroundColor: [color, "#243247"],
-            borderWidth: 0
-          }]
+          datasets: [
+            {
+              data: [
+                currentValue,
+                Math.max(maxValue - currentValue, 0)
+              ],
+
+              backgroundColor: [
+                color,
+                "#243247"
+              ],
+
+              borderWidth: 0
+            }
+          ]
         },
+
         options: {
           responsive: true,
           maintainAspectRatio: false,
           rotation: 270,
           circumference: 180,
           cutout: "72%",
+
           plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
+            legend: {
+              display: false
+            },
+
+            tooltip: {
+              enabled: false
+            }
           }
         }
       });
     }
 
-    function updateGauge(chart, currentValue, maxValue, color) {
-      chart.data.datasets[0].data = [currentValue, Math.max(maxValue - currentValue, 0)];
-      chart.data.datasets[0].backgroundColor = [color, "#243247"];
+    // ===================== UPDATE GAUGE =====================
+
+    function updateGauge(
+      chart,
+      currentValue,
+      maxValue,
+      color
+    ) {
+
+      chart.data.datasets[0].data = [
+        currentValue,
+        Math.max(maxValue - currentValue, 0)
+      ];
+
+      chart.data.datasets[0].backgroundColor = [
+        color,
+        "#243247"
+      ];
+
       chart.update();
     }
 
-    function initGauges() {
-      tempGaugeChart  = createGauge("tempGauge",  0, 60,   "#22c55e");
-      humGaugeChart   = createGauge("humGauge",   0, 100,  "#22c55e");
-      smokeGaugeChart = createGauge("smokeGauge", 0, 4095, "#22c55e");
-      soundGaugeChart = createGauge("soundGauge", 0, 4095, "#22c55e");
-    }
+    // ===================== INITIALIZE GAUGES =====================
 
-    function isAlertFeed(feed) {
-      const temp  = safeNumber(feed.field1);
-      const hum   = safeNumber(feed.field2);
-      const smoke = safeNumber(feed.field3);
-      const sound = safeNumber(feed.field4);
-      return (
-        (smoke !== null && smoke >= smokeThreshold) ||
-        (sound !== null && sound >= soundThreshold) ||
-        (temp  !== null && temp  >= tempThreshold)  ||
-        (hum   !== null && hum   >= humThreshold)
+    function initGauges() {
+
+      tempGaugeChart = createGauge(
+        "tempGauge",
+        0,
+        60,
+        "#22c55e"
+      );
+
+      humGaugeChart = createGauge(
+        "humGauge",
+        0,
+        100,
+        "#22c55e"
+      );
+
+      smokeGaugeChart = createGauge(
+        "smokeGauge",
+        0,
+        4095,
+        "#22c55e"
+      );
+
+      soundGaugeChart = createGauge(
+        "soundGauge",
+        0,
+        4095,
+        "#22c55e"
       );
     }
 
+    // ===================== CHECK ALERT FEED =====================
+
+    function isAlertFeed(feed) {
+
+      const temp =
+        safeNumber(feed.field1);
+
+      const hum =
+        safeNumber(feed.field2);
+
+      const smoke =
+        safeNumber(feed.field3);
+
+      const sound =
+        safeNumber(feed.field4);
+
+      return (
+        (
+          smoke !== null &&
+          smoke >= smokeThreshold
+        ) ||
+
+        (
+          sound !== null &&
+          sound >= soundThreshold
+        ) ||
+
+        (
+          temp !== null &&
+          temp >= tempThreshold
+        ) ||
+
+        (
+          hum !== null &&
+          hum >= humThreshold
+        )
+      );
+    }
+
+    // ===================== FIND LAST ALERT =====================
+
     function findLastAlertFeed(feeds) {
-      for (let i = feeds.length - 1; i >= 0; i--) {
-        if (isAlertFeed(feeds[i])) return feeds[i];
+
+      for (
+        let i = feeds.length - 1;
+        i >= 0;
+        i--
+      ) {
+
+        if (isAlertFeed(feeds[i])) {
+          return feeds[i];
+        }
       }
+
       return null;
     }
 
-    function updateStatus(temp, hum, smoke, sound, latestTime, lastAlertFeed) {
-      const statusText      = document.getElementById("statusText");
-      const statusDesc      = document.getElementById("statusDesc");
-      const statusIndicator = document.getElementById("statusIndicator");
+    // ===================== UPDATE SYSTEM STATUS =====================
 
-      // Keep alert memory alive
+    function updateStatus(
+      temp,
+      hum,
+      smoke,
+      sound,
+      latestTime,
+      lastAlertFeed
+    ) {
+
+      const statusText =
+        document.getElementById("statusText");
+
+      const statusDesc =
+        document.getElementById("statusDesc");
+
+      const statusIndicator =
+        document.getElementById("statusIndicator");
+
+      // Keep recent alert memory active
       if (lastAlertFeed) {
-        const alertTime  = new Date(lastAlertFeed.created_at).getTime();
-        const secondsAgo = (Date.now() - alertTime) / 1000;
+
+        const alertTime =
+          new Date(
+            lastAlertFeed.created_at
+          ).getTime();
+
+        const secondsAgo =
+          (Date.now() - alertTime) / 1000;
+
         if (secondsAgo <= alertMemorySeconds) {
           lastAlertTimestamp = alertTime;
         }
       }
 
-      const recentAlert = lastAlertTimestamp &&
-        ((Date.now() - lastAlertTimestamp) / 1000) <= alertMemorySeconds;
+      const recentAlert =
+        lastAlertTimestamp &&
+        (
+          (Date.now() - lastAlertTimestamp) / 1000
+        ) <= alertMemorySeconds;
 
-      let state         = "NORMAL";
-      let desc          = "All monitored parameters are within the configured thresholds.";
-      let outputs       = "";
-      let cls           = "status-indicator status-normal";
+      let state = "NORMAL";
+
+      let desc =
+        "All monitored parameters are within the configured thresholds.";
+
+      let outputs = "";
+
+      let cls =
+        "status-indicator status-normal";
+
       let indicatorText = "OK";
 
-      // Priority order: Smoke → Temp → Sound → Humidity
-      // Matches Arduino alarm behavior exactly
-      if (smoke !== null && smoke >= smokeThreshold) {
-        state         = "SMOKE ALARM";
-        desc          = "MQ-2 smoke/gas level exceeded the configured threshold.";
-        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan ON";
-        cls           = "status-indicator status-warning";
+      // Priority:
+      // Smoke → Temperature → Sound → Humidity
+
+      if (
+        smoke !== null &&
+        smoke >= smokeThreshold
+      ) {
+
+        state = "SMOKE ALARM";
+
+        desc =
+          "MQ-2 smoke/gas level exceeded the configured threshold of " +
+          smokeThreshold +
+          ".";
+
+        outputs =
+          "🔴 Red LED ON &nbsp;|&nbsp; " +
+          "🔊 Buzzer ON &nbsp;|&nbsp; " +
+          "💨 Fan ON";
+
+        cls =
+          "status-indicator status-warning";
+
         indicatorText = "ALERT";
 
-      } else if (temp !== null && temp >= tempThreshold) {
-        state         = "HIGH TEMPERATURE";
-        desc          = "Temperature exceeded " + tempThreshold + "°C threshold.";
-        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan ON";
-        cls           = "status-indicator status-warning";
+      } else if (
+        temp !== null &&
+        temp >= tempThreshold
+      ) {
+
+        state = "HIGH TEMPERATURE";
+
+        desc =
+          "Temperature exceeded " +
+          tempThreshold +
+          "°C.";
+
+        outputs =
+          "🔴 Red LED ON &nbsp;|&nbsp; " +
+          "🔊 Buzzer ON &nbsp;|&nbsp; " +
+          "💨 Fan ON";
+
+        cls =
+          "status-indicator status-warning";
+
         indicatorText = "ALERT";
 
-      } else if (sound !== null && sound >= soundThreshold) {
-        state         = "SOUND ALERT";
-        desc          = "KY-038 sound level exceeded the configured threshold.";
-        outputs       = "🔴 Red LED ON &nbsp;|&nbsp; 🔊 Buzzer ON &nbsp;|&nbsp; 💨 Fan OFF";
-        cls           = "status-indicator status-warning";
+      } else if (
+        sound !== null &&
+        sound >= soundThreshold
+      ) {
+
+        state = "SOUND ALERT";
+
+        desc =
+          "KY-038 sound level exceeded the configured threshold of " +
+          soundThreshold +
+          ".";
+
+        outputs =
+          "🔴 Red LED ON &nbsp;|&nbsp; " +
+          "🔊 Buzzer ON &nbsp;|&nbsp; " +
+          "💨 Fan OFF";
+
+        cls =
+          "status-indicator status-warning";
+
         indicatorText = "ALERT";
 
-      } else if (hum !== null && hum >= humThreshold) {
-        state         = "HIGH HUMIDITY";
-        desc          = "Humidity level exceeded " + humThreshold + "% threshold.";
-        outputs       = "⚠️ Warning only — no hardware alarm triggered";
-        cls           = "status-indicator status-caution";
+      } else if (
+        hum !== null &&
+        hum >= humThreshold
+      ) {
+
+        state = "HIGH HUMIDITY";
+
+        desc =
+          "Humidity level exceeded " +
+          humThreshold +
+          "% RH.";
+
+        outputs =
+          "⚠️ Warning only — no hardware alarm triggered";
+
+        cls =
+          "status-indicator status-caution";
+
         indicatorText = "WARN";
 
       } else if (recentAlert) {
-        state         = "RECENT ALERT";
-        desc          = "An alert was detected recently. System is now returning to normal.";
-        outputs       = "✅ All outputs now OFF";
-        cls           = "status-indicator status-caution";
+
+        state = "RECENT ALERT";
+
+        desc =
+          "An alert was detected recently. " +
+          "The system is now returning to normal.";
+
+        outputs =
+          "✅ All outputs are now OFF";
+
+        cls =
+          "status-indicator status-caution";
+
         indicatorText = "WAIT";
       }
 
-      const lastAlertTime = lastAlertFeed
-        ? formatSaudiTime(lastAlertFeed.created_at)
-        : "No alert detected in latest 100 records";
+      const lastAlertTime =
+        lastAlertFeed
+          ? formatSaudiTime(
+              lastAlertFeed.created_at
+            )
+          : "No alert detected in the latest 100 records";
 
       statusText.textContent = state;
-      statusDesc.innerHTML   =
-        desc +
-        (outputs ? "<br><small style='color:#22d3ee'>" + outputs + "</small>" : "") +
-        "<br><br><b>Latest Update:</b> " + latestTime +
-        "<br><b>Last Sensor Detection:</b> " + lastAlertTime;
 
-      statusIndicator.className   = cls;
-      statusIndicator.textContent = indicatorText;
+      statusDesc.innerHTML =
+        desc +
+
+        (
+          outputs
+            ? "<br><small style='color:#22d3ee'>" +
+              outputs +
+              "</small>"
+            : ""
+        ) +
+
+        "<br><br><b>Latest Update:</b> " +
+        latestTime +
+
+        "<br><b>Last Sensor Detection:</b> " +
+        lastAlertTime;
+
+      statusIndicator.className = cls;
+
+      statusIndicator.textContent =
+        indicatorText;
     }
 
+    // ===================== LOAD THINGSPEAK DATA =====================
+
     async function loadLatestData() {
+
       try {
-        const response = await fetch(CHANNEL_URL, { cache: "no-store" });
-        const data     = await response.json();
-        const feeds    = data.feeds || [];
-        const latest   = feeds[feeds.length - 1];
 
-        if (!latest) throw new Error("No ThingSpeak data found.");
+        const response =
+          await fetch(
+            CHANNEL_URL,
+            {
+              cache: "no-store"
+            }
+          );
 
-        const temp  = safeNumber(latest.field1);
-        const hum   = safeNumber(latest.field2);
-        const smoke = safeNumber(latest.field3);
-        const sound = safeNumber(latest.field4);
+        if (!response.ok) {
+          throw new Error(
+            "ThingSpeak request failed."
+          );
+        }
 
-        const latestTime    = formatSaudiTime(latest.created_at);
-        const lastAlertFeed = findLastAlertFeed(feeds);
+        const data =
+          await response.json();
 
-        setText("tempValue",  temp  !== null ? temp.toFixed(2) + " °C" : "--");
-        setText("humValue",   hum   !== null ? hum.toFixed(2)  + " %"  : "--");
-        setText("smokeValue", smoke !== null ? Math.round(smoke)        : "--");
-        setText("soundValue", sound !== null ? Math.round(sound)        : "--");
+        const feeds =
+          data.feeds || [];
 
-        setText("tempGaugeText",  temp  !== null ? temp.toFixed(1)  : "--");
-        setText("humGaugeText",   hum   !== null ? hum.toFixed(1)   : "--");
-        setText("smokeGaugeText", smoke !== null ? Math.round(smoke) : "--");
-        setText("soundGaugeText", sound !== null ? Math.round(sound) : "--");
+        const latest =
+          feeds[feeds.length - 1];
 
-        updateStatus(temp, hum, smoke, sound, latestTime, lastAlertFeed);
+        if (!latest) {
+          throw new Error(
+            "No ThingSpeak data found."
+          );
+        }
 
-        // Gauge colors match Arduino thresholds exactly
-        if (temp  !== null) updateGauge(tempGaugeChart,  Math.min(temp,  60),   60,   getGaugeColor(temp,  30,   35));
-        if (hum   !== null) updateGauge(humGaugeChart,   Math.min(hum,   100),  100,  getGaugeColor(hum,   70,   75));
-        if (smoke !== null) updateGauge(smokeGaugeChart, Math.min(smoke, 4095), 4095, getGaugeColor(smoke, 1950, 2050));
-        if (sound !== null) updateGauge(soundGaugeChart, Math.min(sound, 4095), 4095, getGaugeColor(sound, 1700, 2000));
+        const temp =
+          safeNumber(latest.field1);
+
+        const hum =
+          safeNumber(latest.field2);
+
+        const smoke =
+          safeNumber(latest.field3);
+
+        const sound =
+          safeNumber(latest.field4);
+
+        const latestTime =
+          formatSaudiTime(
+            latest.created_at
+          );
+
+        const lastAlertFeed =
+          findLastAlertFeed(feeds);
+
+        // ===================== LIVE VALUES =====================
+
+        setText(
+          "tempValue",
+          temp !== null
+            ? temp.toFixed(2) + " °C"
+            : "--"
+        );
+
+        setText(
+          "humValue",
+          hum !== null
+            ? hum.toFixed(2) + " %"
+            : "--"
+        );
+
+        setText(
+          "smokeValue",
+          smoke !== null
+            ? Math.round(smoke)
+            : "--"
+        );
+
+        setText(
+          "soundValue",
+          sound !== null
+            ? Math.round(sound)
+            : "--"
+        );
+
+        // ===================== GAUGE VALUES =====================
+
+        setText(
+          "tempGaugeText",
+          temp !== null
+            ? temp.toFixed(1)
+            : "--"
+        );
+
+        setText(
+          "humGaugeText",
+          hum !== null
+            ? hum.toFixed(1)
+            : "--"
+        );
+
+        setText(
+          "smokeGaugeText",
+          smoke !== null
+            ? Math.round(smoke)
+            : "--"
+        );
+
+        setText(
+          "soundGaugeText",
+          sound !== null
+            ? Math.round(sound)
+            : "--"
+        );
+
+        // ===================== SYSTEM STATUS =====================
+
+        updateStatus(
+          temp,
+          hum,
+          smoke,
+          sound,
+          latestTime,
+          lastAlertFeed
+        );
+
+        // ===================== TEMPERATURE GAUGE =====================
+
+        if (temp !== null) {
+
+          updateGauge(
+            tempGaugeChart,
+            Math.min(temp, 60),
+            60,
+            getGaugeColor(
+              temp,
+              30,
+              35
+            )
+          );
+        }
+
+        // ===================== HUMIDITY GAUGE =====================
+
+        if (hum !== null) {
+
+          updateGauge(
+            humGaugeChart,
+            Math.min(hum, 100),
+            100,
+            getGaugeColor(
+              hum,
+              70,
+              75
+            )
+          );
+        }
+
+        // ===================== SMOKE GAUGE =====================
+
+        if (smoke !== null) {
+
+          updateGauge(
+            smokeGaugeChart,
+            Math.min(smoke, 4095),
+            4095,
+            getGaugeColor(
+              smoke,
+              2500,
+              2800
+            )
+          );
+        }
+
+        // ===================== SOUND GAUGE =====================
+
+        if (sound !== null) {
+
+          updateGauge(
+            soundGaugeChart,
+            Math.min(sound, 4095),
+            4095,
+            getGaugeColor(
+              sound,
+              2200,
+              2500
+            )
+          );
+        }
 
       } catch (error) {
-        setText("statusText", "DATA ERROR");
-        setText("statusDesc", "Unable to retrieve the latest feed from ThingSpeak.");
-        const statusIndicator = document.getElementById("statusIndicator");
-        statusIndicator.className   = "status-indicator status-warning";
-        statusIndicator.textContent = "ERR";
+
+        console.error(error);
+
+        setText(
+          "statusText",
+          "DATA ERROR"
+        );
+
+        setText(
+          "statusDesc",
+          "Unable to retrieve the latest feed from ThingSpeak."
+        );
+
+        const statusIndicator =
+          document.getElementById(
+            "statusIndicator"
+          );
+
+        statusIndicator.className =
+          "status-indicator status-warning";
+
+        statusIndicator.textContent =
+          "ERR";
       }
     }
 
+    // ===================== START DASHBOARD =====================
+
     initGauges();
+
     loadLatestData();
-    setInterval(loadLatestData, 15000);
+
+    setInterval(
+      loadLatestData,
+      15000
+    );
+
   </script>
+
 </body>
 </html>
